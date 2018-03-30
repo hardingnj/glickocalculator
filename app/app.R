@@ -1,5 +1,5 @@
 library(shiny)
-library(shiny)
+library(reticulate)
 
 #runApp(list(
 #  ui=pageWithSidebar(headerPanel("Adding entries to table"),
@@ -22,7 +22,7 @@ ui <- fluidPage(
       numericInput("text1", "Opponent mu", value=1500, min=0, max=3000, step=50),
       numericInput("text2", "Opponent phi", value=350, min=10, max=350, step=10),
       radioButtons("result", "Result", choices = list("Win" = 1, "Loss" = 0, "Draw" = 0.5), selected = 0.5),
-      actionButton("update", "Add row"),
+      actionButton("update", "Add result"),
       tags$hr(),
       actionButton("compute", h3("Compute ranking"))
     ),
@@ -38,6 +38,9 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram ----
 server <- function(input, output) {
 
+  print(getwd())
+  source_python("compute.py")
+  
   values <- reactiveValues()
 
   colClasses = c("numeric", "numeric", "numeric")
@@ -55,18 +58,18 @@ server <- function(input, output) {
   output$table1 <- renderTable({values$df})
 
   output$rank <- renderText({ 
-    sprintf("Your current rating is %s (mu = %s, phi = %s)", input$mu - (2.5 * input$phi), input$mu, input$phi) 
+    sprintf("Your current rating is %.1f (mu = %.1f, phi = %.1f)", input$mu - (2.5 * input$phi), input$mu, input$phi) 
   })
 
   # function to compute rankings
   muphi <- eventReactive(input$compute, { 
-    list(mu=1922, phi=121) 
+    compute(p_mu=input$mu, p_phi=input$phi, table=values$df) 
   })
 
   output$newranking <- renderText({ 
     mu = muphi()$mu
     phi = muphi()$phi
-    sprintf("After the games below your rating would be %s (mu = %s, phi = %s).", mu - (2.5*phi), mu, phi)
+    sprintf("After the games below your rating would be %.1f (mu = %.1f, phi = %.1f).", mu - (2.5*phi), mu, phi)
   })
 
 }
