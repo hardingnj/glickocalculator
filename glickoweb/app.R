@@ -1,13 +1,7 @@
 library(shiny)
 library(reticulate)
-
-#runApp(list(
-#  ui=pageWithSidebar(headerPanel("Adding entries to table"),
-#                 sidebarPanel(textInput("text1", "Column 1"),
-#                              textInput("text2", "Column 2"),
-#                 mainPanel(tableOutput("table1"))),
-#server=function(input, output, session) {
-#}))
+use_python("/usr/bin/python3")
+source_python("compute.py")
 
 # Define UI for app that draws a histogram ----
 ui <- fluidPage(
@@ -22,7 +16,12 @@ ui <- fluidPage(
       numericInput("text1", "Opponent mu", value=1500, min=0, max=3000, step=50),
       numericInput("text2", "Opponent phi", value=350, min=10, max=350, step=10),
       radioButtons("result", "Result", choices = list("Win" = 1, "Loss" = 0, "Draw" = 0.5), selected = 0.5),
-      actionButton("update", "Add result"),
+      fluidRow(
+        splitLayout(
+          actionButton("update", "Add result"),
+          actionButton("clear", "Clear table")
+        )
+      ),
       tags$hr(),
       actionButton("compute", h3("Compute ranking"))
     ),
@@ -38,8 +37,6 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram ----
 server <- function(input, output) {
 
-  print(getwd())
-  source_python("compute.py")
   
   values <- reactiveValues()
 
@@ -49,17 +46,21 @@ server <- function(input, output) {
   values$df <- read.table(
     text = "", colClasses = colClasses, col.names = col.names)
 
+  # add rows
   newEntry <- observe({
     if(input$update > 0) {
-      newLine <- isolate(c(input$text1, input$text2, input$result))
       isolate(values$df[nrow(values$df) + 1,] <- c(input$text1, input$text2, input$result))
     }
   })
-  output$table1 <- renderTable({values$df})
 
-  output$rank <- renderText({ 
-    sprintf("Your current rating is %.1f (mu = %.1f, phi = %.1f)", input$mu - (2.5 * input$phi), input$mu, input$phi) 
+  # function to clear table 
+  newEntry <- observe({
+    if(input$clear > 0) {
+      values$df <- read.table(text = "", colClasses = colClasses, col.names = col.names)
+    }
   })
+
+  output$table1 <- renderTable({values$df})
 
   # function to compute rankings
   muphi <- eventReactive(input$compute, { 
@@ -68,13 +69,15 @@ server <- function(input, output) {
     }
   })
 
+  output$rank <- renderText({ 
+    sprintf("Your current rating is %.1f (mu = %.1f, phi = %.1f)", input$mu - (2.5 * input$phi), input$mu, input$phi) 
+  })
+
   output$newranking <- renderText({ 
     mu = muphi()$mu
     phi = muphi()$phi
     sprintf("After the games below your rating would be %.1f (mu = %.1f, phi = %.1f).", mu - (2.5*phi), mu, phi)
   })
-
 }
-
 
 shinyApp(ui = ui, server = server)
