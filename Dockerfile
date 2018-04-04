@@ -5,31 +5,34 @@ MAINTAINER "Nicholas Harding" nicholas.harding@bdi.ox.ac.uk
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     curl \
-    ca-certificates
+    ca-certificates \
+    python3 \
+    libpython3-dev
  
-# install anaconda
-RUN curl -L http://repo.continuum.io/archive/Anaconda3-4.0.0-Linux-x86_64.sh > \
-  anaconda_setup.sh
-RUN bash anaconda_setup.sh -b -p /anaconda
-ENV PATH /anaconda/bin:$PATH
-
-RUN conda update -y conda
-
-# conda with python 3.5.2
-RUN conda create --name shinyenv --yes python=3.5.2
-RUN conda config --add channels conda-forge
-
-RUN rm /bin/sh && ln -s /bin/bash /bin/sh
-RUN source activate shinyenv && conda install -y pandas matplotlib seaborn numpy
+RUN python3 --version
+RUN wget https://bootstrap.pypa.io/get-pip.py
+RUN python3 get-pip.py
+RUN pip install pandas
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
 ENV CURL_CA_BUNDLE /etc/ssl/certs/ca-certificates.crt
 RUN curl -OL https://github.com/sublee/glicko2/archive/master.zip
 RUN unzip master.zip 
-RUN source activate shinyenv && cd glicko2-master && python setup.py install
+RUN cd glicko2-master && python setup.py install
 
-COPY shiny-server.sh /usr/bin/shiny-server.sh
 COPY glickoweb /srv/shiny-server/glickoweb
+
 RUN ls /srv/shiny-server/
+RUN which shiny-server
+
+RUN R -e 'install.packages("reticulate")'
+
+RUN which python3
+RUN which python
+RUN ls /usr/lib/
+RUN ls /usr/local/lib 
+RUN python3 --version
+ENV LD_LIBRARY_PATH /usr/lib/python3.6/config-3.6m-x86_64-linux-gnu
 
 EXPOSE 3838
 CMD ["/usr/bin/shiny-server.sh"]
