@@ -65,7 +65,7 @@ server <- function(input, output) {
   # function to compute rankings
   muphi <- eventReactive(input$compute, { 
     if (nrow(values$df) > 0) {
-      compute(p_mu=input$mu, p_phi=input$phi, table=values$df) 
+      compute(p_mu=input$mu, p_phi=input$phi, table=as.matrix(values$df))
     }
   })
 
