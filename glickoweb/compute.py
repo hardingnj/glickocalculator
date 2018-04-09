@@ -3,7 +3,7 @@ import pandas as pd
 
 def compute(p_mu, p_phi, table):
 
-  table = pd.DataFrame(table)
+  table = pd.DataFrame(table, index=range(len(table)))
   
   p_mu = float(p_mu)
   p_phi = float(p_phi)
